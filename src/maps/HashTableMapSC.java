@@ -13,41 +13,55 @@ import java.util.*;
 public class HashTableMapSC<K, V> implements Map<K, V> {
 
     private class HashEntry<T, U> implements Entry<T, U> {
+        protected T key;
 
+        protected U value;
+        
         public HashEntry(T k, U v) {
-            throw new UnsupportedOperationException("Not yet implemented");
+            key = k;
+            value = v;
         }
 
-        @Override
-        public U getValue() {
-            throw new UnsupportedOperationException("Not yet implemented");
+        public void setKey(T key) {
+            this.key = key;
+        }
+
+        public void setValue(U value) {
+            this.value = value;
         }
 
         @Override
         public T getKey() {
-            throw new UnsupportedOperationException("Not yet implemented");
+            return key;
         }
 
-        public U setValue(U val) {
-            throw new UnsupportedOperationException("Not yet implemented");
+        @Override
+        public U getValue() {
+            return value;
         }
 
         @Override
         public boolean equals(Object o) {
-            throw new UnsupportedOperationException("Not yet implemented");
+            if (this == o) return true;
+            if (!(o.getClass() != this.getValue())) return false;
+            HashEntry<?, ?> hashEntry = (HashEntry<?, ?>) o;
+            return Objects.equals(key, hashEntry.key) && Objects.equals(value, hashEntry.value);
         }
+        
 
         /**
          * Entry visualization.
          */
         @Override
         public String toString() {
-            throw new UnsupportedOperationException("Not yet implemented");
+            return "{" + key + ", " + value + "}";
+            
         }
     }
 
     private class HashTableMapIterator<T, U> implements Iterator<Entry<T, U>> {
 
+        private Deque<HashEntry<T, U>> queue;
         public HashTableMapIterator(List<HashEntry<T, U>>[] map, int numElems) {
             throw new UnsupportedOperationException("Not yet implemented");
         }
@@ -108,17 +122,26 @@ public class HashTableMapSC<K, V> implements Map<K, V> {
     }
 
 
+    private int n; // Number of entries
+    private int cap; // capacity of the bucket
+    private List<HashEntry<K, V>> [] bucket;
+    private int a, b, prime;
+
     /**
      * Creates a hash table
      */
-    public HashTableMapSC() {throw new UnsupportedOperationException("Not yet implemented");}
+    public HashTableMapSC() {
+        this(50);
+    }
 
     /**
      * Creates a hash table.
      *
      * @param cap initial capacity
      */
-    public HashTableMapSC(int cap) {throw new UnsupportedOperationException("Not yet implemented");}
+    public HashTableMapSC(int cap) {
+        this(101, cap);
+    }
 
     /**
      * Creates a hash table with the given prime factor and capacity.
@@ -126,7 +149,15 @@ public class HashTableMapSC<K, V> implements Map<K, V> {
      * @param p prime number
      * @param cap initial capacity
      */
-    public HashTableMapSC(int p, int cap) {throw new UnsupportedOperationException("Not yet implemented");}
+    public HashTableMapSC(int p, int cap) {
+        this.n = 0;
+        this.cap = cap;
+        this.bucket = new List[this.cap];
+        this.prime = p;
+        Random rand = new Random(this.cap);
+        a = rand.nextInt(prime - 1) + 1;
+        b = rand.nextInt(prime);
+    }
 
     /**
      * Hash function applying MAD method to default hash code.
@@ -134,7 +165,10 @@ public class HashTableMapSC<K, V> implements Map<K, V> {
      * @param key Key
      * @return
      */
-    protected int hashCode(K key) {throw new UnsupportedOperationException("Not yet implemented");}
+    protected int hashCode(K key) {
+        int x = key.hashCode();
+        return (a*x + b) % prime;
+    }
 
     /**
      * Calculate the dispersed key.
@@ -143,7 +177,10 @@ public class HashTableMapSC<K, V> implements Map<K, V> {
      * @param key Key
      * @return
      */
-    protected int hashValue(K key) {throw new UnsupportedOperationException("Not yet implemented");}
+    protected int hashValue(K key) {
+         int hash = hashCode(key);
+         return Math.abs(hash) % this.cap;
+    }
 
     /**
      * Returns the number of entries in the hash table.
@@ -151,7 +188,9 @@ public class HashTableMapSC<K, V> implements Map<K, V> {
      * @return the size
      */
     @Override
-    public int size() {throw new UnsupportedOperationException("Not yet implemented");}
+    public int size() {
+        return this.n;
+    }
 
     /**
      * Returns whether or not the table is empty.
@@ -159,8 +198,18 @@ public class HashTableMapSC<K, V> implements Map<K, V> {
      * @return true if the size is 0
      */
     @Override
-    public boolean isEmpty() {throw new UnsupportedOperationException("Not yet implemented");}
+    public boolean isEmpty() {
+        return this.n == 0;
+    }
 
+    private V findValue(K key, List<HashEntry<K, V>> list){
+        for(HashEntry<K, V> entry : list){
+            if(entry.getKey().equals(key)){
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
     /**
      * Returns the value associated with a key.
      *
@@ -168,7 +217,17 @@ public class HashTableMapSC<K, V> implements Map<K, V> {
      * @return value
      */
     @Override
-    public V get(K key) throws IllegalStateException {throw new UnsupportedOperationException("Not yet implemented");}
+    public V get(K key) throws IllegalStateException {
+        int index = hashValue(key);
+        List<HashEntry<K, V>> B = this.bucket[index];
+
+        if (B == null || B.isEmpty()){
+            return null;
+        }
+        else {
+            return this.findValue(key, B);
+        }
+    }
 
     /**
      * Put a key-value pair in the map, replacing previous one if it exists.
@@ -178,7 +237,30 @@ public class HashTableMapSC<K, V> implements Map<K, V> {
      * @return value
      */
     @Override
-    public V put(K key, V value) throws IllegalStateException {throw new UnsupportedOperationException("Not yet implemented");}
+    public V put(K key, V value) throws IllegalStateException {
+        int index = hashValue(key);
+        List<HashEntry<K, V>> B = this.bucket[index];
+        V oldValue = null;
+        HashEntry<K, V> newEntry = new HashEntry<>(key, value);
+
+        if (B == null){
+            B = new LinkedList<>();
+        }
+        else{
+            oldValue = this.findValue(key, B);
+
+            if (oldValue != null) {
+                B.remove(new HashEntry<>(key, oldValue));
+                this.n--;
+            }
+        }
+
+        B.add(newEntry);
+        this.bucket[index] = B;
+
+        this.n++;
+        return oldValue;
+    }
 
     /**
      * Removes the key-value pair with a specified key.
@@ -187,7 +269,25 @@ public class HashTableMapSC<K, V> implements Map<K, V> {
      * @return
      */
     @Override
-    public V remove(K key) throws IllegalStateException {throw new UnsupportedOperationException("Not yet implemented");}
+    public V remove(K key) throws IllegalStateException {
+        int index = hashValue(key);
+        List<HashEntry<K, V>> B = this.bucket[index];
+        V returnValue = null;
+
+        if (B == null || B.isEmpty()){
+            return returnValue;
+        }
+        else{
+            returnValue = this.findValue(key, B);
+            if (returnValue == null){
+                return returnValue;
+            }
+            B.remove(new HashEntry<K, V>(key, returnValue));
+            this.n--;
+            this.bucket[index] = B;
+        }
+        return returnValue;
+    }
 
     @Override
     public Iterator<Entry<K, V>> iterator() {throw new UnsupportedOperationException("Not yet implemented");}
