@@ -38,7 +38,7 @@ public class HashTableMapSCTest {
         instance.put("912127655E", "Raul");
         assertEquals(instance.size(),5);
         
-        instance.remove("Angel");
+        instance.remove("912127658B");
         assertEquals(instance.size(),4);
     }
 
