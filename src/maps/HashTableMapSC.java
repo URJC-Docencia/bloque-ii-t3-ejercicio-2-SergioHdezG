@@ -62,18 +62,32 @@ public class HashTableMapSC<K, V> implements Map<K, V> {
     private class HashTableMapIterator<T, U> implements Iterator<Entry<T, U>> {
 
         private Deque<HashEntry<T, U>> queue;
+        private List<HashEntry<T, U>>[] map;
+        private int n;
         public HashTableMapIterator(List<HashEntry<T, U>>[] map, int numElems) {
-            throw new UnsupportedOperationException("Not yet implemented");
+            this.map = map;
+            queue = new LinkedList<>();
+            this.n = numElems;
+            
+            for (List<HashEntry<T, U>> auxList : map){
+                if (auxList != null) {
+                    for (HashEntry<T, U> auxEntry : auxList) {
+                        if (auxEntry != null){
+                            this.queue.addFirst(auxEntry);
+                        }
+                    }
+                }
+            }
         }
 
         @Override
         public boolean hasNext() {
-            throw new UnsupportedOperationException("Not yet implemented");
+            return this.queue.size() > 0;
         }
 
         @Override
         public Entry<T, U> next() {
-            throw new UnsupportedOperationException("Not yet implemented");
+            return this.queue.removeLast();
         }
 
         @Override
